@@ -1,0 +1,40 @@
+{
+  "name": "concurrent-streams",
+  "version": "0.0.1",
+  "description": "Safe concurrent streams for reading and writing file",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "rimraf dist && tsc",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mvisat/concurrent-streams.git"
+  },
+  "keywords": [
+    "concurrent",
+    "streams"
+  ],
+  "author": "Muhamad Visat Sutarno",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/mvisat/concurrent-streams/issues"
+  },
+  "homepage": "https://github.com/mvisat/concurrent-streams#readme",
+  "devDependencies": {
+    "@types/jest": "^23.3.1",
+    "@types/node": "^10.5.6",
+    "@types/tmp": "^0.0.33",
+    "jest": "^23.4.2",
+    "null-writable": "^0.3.0",
+    "random-readable": "^0.1.0",
+    "tmp": "^0.0.33",
+    "ts-jest": "^23.1.2",
+    "typescript": "^3.0.1"
+  },
+  "dependencies": {
+    "bottleneck": "^2.6.0",
+    "locks": "^0.2.2"
+  }
+}
