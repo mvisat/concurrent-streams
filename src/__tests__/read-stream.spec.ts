@@ -51,7 +51,7 @@ describe('Read stream tests', () => {
 
     beforeAll(done => {
         concurrent = new ConcurrentStream(blobIn);
-        createRandomStream({ size: blobSize })
+        createRandomStream(blobSize)
             .on('error', done.fail)
             .on('end', done)
             .pipe(createWriteStream(blobIn));

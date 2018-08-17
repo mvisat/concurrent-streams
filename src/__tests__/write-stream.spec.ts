@@ -49,7 +49,7 @@ describe('Write stream tests', () => {
 
     beforeAll(done => {
         jest.setTimeout(1000);
-        createRandomStream({ size: blobSize })
+        createRandomStream(blobSize)
             .on('end', done)
             .pipe(createWriteStream(blobIn));
     });
@@ -184,7 +184,7 @@ describe('Write stream tests', () => {
             .on('error', done.fail);
 
         expect.hasAssertions();
-        createRandomStream({ size: 1 }).pipe(stream);
+        createRandomStream(1).pipe(stream);
     });
 
     it('unrefs when destroyed', done => {
@@ -199,7 +199,7 @@ describe('Write stream tests', () => {
             });
 
         expect.hasAssertions();
-        createRandomStream({ size: blobSize }).pipe(stream);
+        createRandomStream(blobSize).pipe(stream);
     });
 
     it('unrefs when write error occured', done => {
@@ -211,7 +211,7 @@ describe('Write stream tests', () => {
         writeMock.mockRejectedValue(writeError);
         expect.assertions(1);
 
-        createRandomStream({ size: blobSize })
+        createRandomStream(blobSize)
             .pipe(concurrent.createWriteStream()
                 .on('error', err => {
                     expect(() => { throw err; }).toThrowError(writeError);
