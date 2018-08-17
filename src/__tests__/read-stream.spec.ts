@@ -1,9 +1,9 @@
-import { createReadStream, createWriteStream, unlink } from 'fs';
 import { createHash } from 'crypto';
+import { createReadStream, createWriteStream, unlink } from 'fs';
 import { promisify } from 'util';
 
-import { createRandomStream } from 'random-readable';
 import { NullWritable } from 'null-writable';
+import { createRandomStream } from 'random-readable';
 import { tmpNameSync } from 'tmp';
 
 import { ConcurrentStream } from '../stream';
@@ -27,7 +27,7 @@ function expectEqualStreams(actualStreams, expectedStreams, done) {
                 .pipe(hash).on('finish', () => {
                     resolve(hash.read());
                 });
-        })
+        });
     }
 
     expect(actualStreams.length).toBe(expectedStreams.length);

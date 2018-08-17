@@ -12,7 +12,7 @@ const defaultOptions: ReadStreamOptions = {
     start: 0,
     end: Infinity,
     highWaterMark: 64 * 1024,
-}
+};
 
 export class ReadStream extends Readable {
     private context: ConcurrentStream;
@@ -33,8 +33,9 @@ export class ReadStream extends Readable {
     }
 
     public _read(size: number): void {
-        if (this.closed)
+        if (this.closed) {
             return;
+        }
 
         // TODO: fix this with `this.readableHighWaterMark` when using Node 9+
         // @ts-ignore
@@ -75,8 +76,9 @@ export class ReadStream extends Readable {
     }
 
     private _close(): void {
-        if (this.closed)
+        if (this.closed) {
             return;
+        }
 
         this.closed = true;
         this.context.unref();

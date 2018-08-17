@@ -1,7 +1,9 @@
 import { tmpNameSync } from 'tmp';
 
-import { ConcurrentStream, ErrInvalidRef } from '../stream';
-import { write } from 'fs';
+import {
+    ConcurrentStream,
+    ErrInvalidRef,
+} from '../stream';
 
 const blobSize = 1 * 1024 * 1024;
 const blobIn = tmpNameSync();
@@ -9,7 +11,10 @@ const blobOut = tmpNameSync();
 
 describe('Concurrent stream tests', () => {
     let concurrent;
-    let fsOpenMock, fsCloseMock, fsReadMock, fsWriteMock;
+    let fsOpenMock;
+    let fsCloseMock;
+    let fsReadMock;
+    let fsWriteMock;
     const openError = new Error('Mock open error');
     const closeError = new Error('Mock close error');
     const readError = new Error('Mock read error');
@@ -30,7 +35,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error on invalid ref', done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(ErrInvalidRef);
+            expect(() => { throw err; }).toThrowError(ErrInvalidRef);
             done();
         }).unref();
     });
@@ -75,7 +80,7 @@ describe('Concurrent stream tests', () => {
         fsCloseMock.mockResolvedValue(undefined);
         concurrent.ref();
         concurrent.unref();
-    })
+    });
 
     it('does not not open and close fd more than once', async done => {
         concurrent.on('error', done.fail);
@@ -92,7 +97,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error when open error occured', async done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(openError);
+            expect(() => { throw err; }).toThrowError(openError);
             done();
         });
         fsOpenMock.mockRejectedValue(openError);
@@ -101,7 +106,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error when close error occured', async done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(closeError);
+            expect(() => { throw err; }).toThrowError(closeError);
             done();
         });
         fsOpenMock.mockResolvedValue(0);
@@ -112,7 +117,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error whilst reading and open error occured', async done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(openError);
+            expect(() => { throw err; }).toThrowError(openError);
             done();
         });
         fsOpenMock.mockRejectedValue(openError);
@@ -134,7 +139,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error whilst writing and open error occured', async done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(openError);
+            expect(() => { throw err; }).toThrowError(openError);
             done();
         });
         fsOpenMock.mockRejectedValue(openError);
@@ -145,7 +150,7 @@ describe('Concurrent stream tests', () => {
 
     it('emits error whilst writing and write error occured', async done => {
         concurrent.on('error', err => {
-            expect(() => { throw err }).toThrowError(writeError);
+            expect(() => { throw err; }).toThrowError(writeError);
             done();
         });
         fsOpenMock.mockResolvedValue(0);

@@ -1,5 +1,5 @@
-import { createReadStream, createWriteStream, unlink } from 'fs';
 import { createHash } from 'crypto';
+import { createReadStream, createWriteStream, unlink } from 'fs';
 import { promisify } from 'util';
 
 import { createRandomStream } from 'random-readable';
@@ -26,7 +26,7 @@ function expectEqualStreams(actualStreams, expectedStreams, done) {
                 .pipe(hash).on('finish', () => {
                     resolve(hash.read());
                 });
-        })
+        });
     }
 
     expect(actualStreams.length).toBe(expectedStreams.length);
@@ -103,8 +103,8 @@ describe('Write stream tests', () => {
         for (let i = 0; i < N; ++i) {
             const start = blobSize * i / 4;
             const end = blobSize * (i + 1) / 4;
-            actualStreams.push(concurrent.createWriteStream({ start: start }));
-            inStreams.push(createReadStream(blobIn, { start: start, end: end }));
+            actualStreams.push(concurrent.createWriteStream({ start }));
+            inStreams.push(createReadStream(blobIn, { start, end }));
         }
         await Promise.all(inStreams.map((stream, index) => {
             return new Promise((resolve, reject) => {
@@ -119,7 +119,7 @@ describe('Write stream tests', () => {
         const stream = concurrent.createWriteStream();
         const mockWritev = jest.spyOn(stream, "_writev");
         expect.assertions(1);
-        stream.on('error', done.fail)
+        stream.on('error', done.fail);
         concurrent
             .on('error', done.fail)
             .on('close', () => {
@@ -134,7 +134,7 @@ describe('Write stream tests', () => {
             stream.write(buf);
         }
         stream.end();
-        process.nextTick(() => { stream.uncork() });
+        process.nextTick(() => { stream.uncork(); });
     });
 
     it('emits error when end offset exceeded', done => {
@@ -215,7 +215,6 @@ describe('Write stream tests', () => {
             .pipe(concurrent.createWriteStream()
                 .on('error', err => {
                     expect(() => { throw err; }).toThrowError(writeError);
-                })
-            )
+                }));
     });
 });

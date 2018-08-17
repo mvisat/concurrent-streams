@@ -12,7 +12,7 @@ const defaultOptions: WriteStreamOptions = {
     start: 0,
     end: Infinity,
     highWaterMark: 64 * 1024,
-}
+};
 
 export class WriteStream extends Writable {
     private context: ConcurrentStream;
@@ -38,14 +38,34 @@ export class WriteStream extends Writable {
         this._actualWrite(buffer, callback);
     }
 
-    public _writev(buffers: {chunk: any, encoding: string}[], callback: (error?: Error) => void): void {
+    public _writev(buffers: Array<{chunk: any, encoding: string}>, callback: (error?: Error) => void): void {
         const buffer = Buffer.concat(buffers.map(b => b.chunk));
         this._actualWrite(buffer, callback);
     }
 
-    private _actualWrite(buffer: Buffer | Uint8Array, callback: (error?: Error) => void): void {
-        if (this.closed)
+    public _final(callback: (error?: Error) => void): void {
+        this._close();
+        callback();
+    }
+
+    public _destroy(error: Error, callback: (error?: Error) => void): void {
+        this._close();
+        callback(error);
+    }
+
+    private _close(): void {
+        if (this.closed) {
             return;
+        }
+
+        this.closed = true;
+        this.context.unref();
+    }
+
+    private _actualWrite(buffer: Buffer | Uint8Array, callback: (error?: Error) => void): void {
+        if (this.closed) {
+            return;
+        }
 
         if (this.pos + buffer.length > this.options.end) {
             this.destroy();
@@ -66,23 +86,5 @@ export class WriteStream extends Writable {
                 callback(err);
             }
         })();
-    }
-
-    public _final(callback: (error?: Error) => void): void {
-        this._close();
-        callback();
-    }
-
-    public _destroy(error: Error, callback: (error?: Error) => void): void {
-        this._close();
-        callback(error);
-    }
-
-    private _close(): void {
-        if (this.closed)
-            return;
-
-        this.closed = true;
-        this.context.unref();
     }
 }

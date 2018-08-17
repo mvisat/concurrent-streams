@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { open, close, read, write } from 'fs';
+import { close, open, read, write } from 'fs';
 import { promisify } from 'util';
 
 import Bottleneck from 'bottleneck';
@@ -24,9 +24,12 @@ const defaultOptions: StreamOptions = {
     fd: null,
     mode: 0o666,
     autoClose: true,
-}
+};
 
 export class ConcurrentStream extends EventEmitter {
+    public fsOpenAsync = promisify(open);
+    public fsCloseAsync = promisify(close);
+
     private path: string;
     private options: StreamOptions;
     private fd: number;
@@ -62,23 +65,25 @@ export class ConcurrentStream extends EventEmitter {
     public unref(): void {
         this.refCount--;
 
-        if (this.refCount > 0) return;
+        if (this.refCount > 0) { return; }
         if (this.refCount < 0) {
             this.emit('error', ErrInvalidRef);
             return;
         }
 
         if (this.options.autoClose) {
-            if (typeof this.fd === 'number')
+            if (typeof this.fd === 'number') {
                 this.closeAsync();
-            else
+            } else {
                 this.emit('close');
+            }
         }
     }
 
     public async openAsync() {
-        if (typeof this.fd === 'number')
+        if (typeof this.fd === 'number') {
             return;
+        }
 
         try {
             this.fd = await this.fsOpenAsync(this.path, this.options.flags, this.options.mode);
@@ -89,8 +94,9 @@ export class ConcurrentStream extends EventEmitter {
     }
 
     public async closeAsync() {
-        if (typeof this.fd !== 'number')
+        if (typeof this.fd !== 'number') {
             return;
+        }
 
         try {
             await this.fsCloseAsync(this.fd);
@@ -101,9 +107,10 @@ export class ConcurrentStream extends EventEmitter {
         this.fd = null;
     }
 
-    public async readAsync(buffer: Buffer | Uint8Array, offset: number, length: number, position: number, cancels?: () => boolean): Promise<number> {
+    public async readAsync(
+            buffer: Buffer | Uint8Array, offset: number, length: number,
+            position: number, cancels?: () => boolean): Promise<number> {
         if (typeof cancels === 'function' && cancels()) {
-            console.log('RETURN')
             return;
         }
 
@@ -115,9 +122,12 @@ export class ConcurrentStream extends EventEmitter {
         }
     }
 
-    public async writeAsync(buffer: Buffer | Uint8Array, offset: number, length: number, position: number, cancels?: () => boolean): Promise<number> {
-        if (typeof cancels === 'function' && cancels())
+    public async writeAsync(
+            buffer: Buffer | Uint8Array, offset: number, length: number,
+            position: number, cancels?: () => boolean): Promise<number> {
+        if (typeof cancels === 'function' && cancels()) {
             return;
+        }
 
         try {
             await this.openAsync();
@@ -127,27 +137,32 @@ export class ConcurrentStream extends EventEmitter {
         }
     }
 
-    public fsOpenAsync = promisify(open);
-    public fsCloseAsync = promisify(close);
-
     // workaround for promisified version of `fs.read` and `fs.write`
     // sometimes it only returns `bytesRead` or `bytesWritten`
     // we don't need the `buffer`, so we can just omit it
-    public fsReadAsync(fd: number, buffer: Buffer | Uint8Array, offset: number, length: number, position: number): Promise<number> {
+    public fsReadAsync(
+            fd: number, buffer: Buffer | Uint8Array, offset: number,
+            length: number, position: number): Promise<number> {
         return new Promise((resolve, reject) => {
             read(fd, buffer, offset, length, position, (err, bytesRead) => {
-                if (err) return reject(err);
+                if (err) {
+                    return reject(err);
+                }
                 resolve(bytesRead);
             });
-        })
-    };
+        });
+    }
 
-    public fsWriteAsync(fd: number, buffer: Buffer | Uint8Array, offset: number, length: number, position: number): Promise<number> {
+    public fsWriteAsync(
+            fd: number, buffer: Buffer | Uint8Array, offset: number,
+            length: number, position: number): Promise<number> {
         return new Promise((resolve, reject) => {
             write(fd, buffer, offset, length, position, (err, bytesWritten) => {
-                if (err) return reject(err);
+                if (err) {
+                    return reject(err);
+                }
                 resolve(bytesWritten);
             });
-        })
-    };
+        });
+    }
 }
