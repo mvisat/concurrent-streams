@@ -6,6 +6,7 @@
   "types": "dist/src/index.d.ts",
   "scripts": {
     "build": "rimraf dist && tsc",
+    "prepublish": "npm run build",
     "test": "jest"
   },
   "repository": {
@@ -31,6 +32,8 @@
     "random-readable": "^0.1.0",
     "tmp": "^0.0.33",
     "ts-jest": "^23.1.2",
+    "tslint": "^5.11.0",
+    "tslint-eslint-rules": "^5.4.0",
     "typescript": "^3.0.1"
   },
   "dependencies": {
