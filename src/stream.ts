@@ -2,7 +2,7 @@ import { EventEmitter } from 'events';
 import { close, open, read, write } from 'fs';
 import { promisify } from 'util';
 
-import Bottleneck from 'bottleneck';
+import RWLock from 'async-rwlock';
 
 import { ReadStream, ReadStreamOptions } from './read-stream';
 import { WriteStream, WriteStreamOptions } from './write-stream';
@@ -33,7 +33,9 @@ export class ConcurrentStream extends EventEmitter {
     private path: string;
     private options: StreamOptions;
     private fd: number;
-    private refCount: number;
+
+    private refCount = 0;
+    private lock = new RWLock();
 
     constructor(path: string, options?: StreamOptions) {
         super();
@@ -41,13 +43,6 @@ export class ConcurrentStream extends EventEmitter {
         this.path = path;
         this.options = Object.assign({}, defaultOptions, options);
         this.fd = this.options.fd;
-
-        this.refCount = 0;
-
-        // wrap function
-        const limiter = new Bottleneck({ maxConcurrent: 1 });
-        this.readAsync = limiter.wrap(this.readAsync.bind(this));
-        this.writeAsync = limiter.wrap(this.writeAsync.bind(this));
     }
 
     public createReadStream(options?: ReadStreamOptions): ReadStream {
@@ -114,11 +109,14 @@ export class ConcurrentStream extends EventEmitter {
             return;
         }
 
+        await this.lock.readLock();
         try {
             await this.openAsync();
             return await this.fsReadAsync(this.fd, buffer, offset, length, position);
         } catch (err) {
             this.emit('error', err);
+        } finally {
+            this.lock.unlock();
         }
     }
 
@@ -129,11 +127,14 @@ export class ConcurrentStream extends EventEmitter {
             return;
         }
 
+        await this.lock.writeLock();
         try {
             await this.openAsync();
             return await this.fsWriteAsync(this.fd, buffer, offset, length, position);
         } catch (err) {
             this.emit('error', err);
+        } finally {
+            this.lock.unlock();
         }
     }
 
