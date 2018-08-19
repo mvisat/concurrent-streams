@@ -75,6 +75,7 @@ export class ReadStream extends Readable {
     }
 
     private _close(): void {
+        /* istanbul ignore if */
         if (this.closed) {
             return;
         }
