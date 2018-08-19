@@ -47,7 +47,7 @@ function expectEqualStreams(actualStreams, expectedStreams, done) {
 
 describe('Read stream tests', () => {
     let concurrent;
-    const ErrRead = new Error('Mock read error');
+    const readError = new Error('Mock read error');
 
     beforeAll(done => {
         concurrent = new ConcurrentStream(blobIn);
@@ -64,10 +64,7 @@ describe('Read stream tests', () => {
     });
 
     beforeEach(async done => {
-        try {
-            await unlinkAsync(blobOut);
-        } catch (err) {
-        }
+        try { await unlinkAsync(blobOut); } catch (err) { }
         done();
     });
 
@@ -121,11 +118,30 @@ describe('Read stream tests', () => {
             .on('close', done);
         const stream = concurrent.createReadStream();
         stream.on('error', err => {
-            expect(() => { throw err; }).toThrowError(ErrRead);
+            expect(() => { throw err; }).toThrowError(readError);
         });
-        const readMock = jest.spyOn(concurrent, 'readAsync');
-        readMock.mockRejectedValue(ErrRead);
         expect.assertions(1);
+
+        const readMock = jest.spyOn(concurrent, 'fsReadAsync');
+        readMock.mockRejectedValueOnce(readError);
+        stream.pipe(new NullWritable());
+    });
+
+    it('unrefs when fs.read error occured', done => {
+        concurrent.on('error', done.fail);
+        concurrent.on('close', done);
+
+        const stream = concurrent.createReadStream();
+        stream.on('error', err => {
+            expect(() => { throw err; }).toThrowError(readError);
+        });
+        expect.assertions(1);
+
+        const fs = require('fs');
+        const readMock = jest.spyOn(fs, 'read');
+        readMock.mockImplementationOnce((fd, buf, offset, length, pos, cb) => {
+            cb(readError);
+        });
         stream.pipe(new NullWritable());
     });
 });

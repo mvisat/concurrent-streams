@@ -68,7 +68,13 @@ export class ConcurrentStream extends EventEmitter {
 
         if (this.options.autoClose) {
             if (typeof this.fd === 'number') {
-                this.closeAsync();
+                (async () => {
+                    try {
+                        await this.closeAsync();
+                    } catch (err) {
+                        this.emit('error', err);
+                    }
+                })();
             } else {
                 this.emit('close');
             }
@@ -80,12 +86,8 @@ export class ConcurrentStream extends EventEmitter {
             return;
         }
 
-        try {
-            this.fd = await this.fsOpenAsync(this.path, this.options.flags, this.options.mode);
-            this.emit('open', this.fd);
-        } catch (err) {
-            this.emit('error', err);
-        }
+        this.fd = await this.fsOpenAsync(this.path, this.options.flags, this.options.mode);
+        this.emit('open', this.fd);
     }
 
     public async closeAsync() {
@@ -93,12 +95,8 @@ export class ConcurrentStream extends EventEmitter {
             return;
         }
 
-        try {
-            await this.fsCloseAsync(this.fd);
-            this.emit('close');
-        } catch (err) {
-            this.emit('error', err);
-        }
+        await this.fsCloseAsync(this.fd);
+        this.emit('close');
         this.fd = null;
     }
 
@@ -113,8 +111,6 @@ export class ConcurrentStream extends EventEmitter {
         try {
             await this.openAsync();
             return await this.fsReadAsync(this.fd, buffer, offset, length, position);
-        } catch (err) {
-            this.emit('error', err);
         } finally {
             this.lock.unlock();
         }
@@ -131,8 +127,6 @@ export class ConcurrentStream extends EventEmitter {
         try {
             await this.openAsync();
             return await this.fsWriteAsync(this.fd, buffer, offset, length, position);
-        } catch (err) {
-            this.emit('error', err);
         } finally {
             this.lock.unlock();
         }
@@ -141,10 +135,10 @@ export class ConcurrentStream extends EventEmitter {
     // workaround for promisified version of `fs.read` and `fs.write`
     // sometimes it only returns `bytesRead` or `bytesWritten`
     // we don't need the `buffer`, so we can just omit it
-    public fsReadAsync(
+    public async fsReadAsync(
             fd: number, buffer: Buffer | Uint8Array, offset: number,
             length: number, position: number): Promise<number> {
-        return new Promise((resolve, reject) => {
+        return new Promise<number>((resolve, reject) => {
             read(fd, buffer, offset, length, position, (err, bytesRead) => {
                 if (err) {
                     return reject(err);
@@ -154,10 +148,10 @@ export class ConcurrentStream extends EventEmitter {
         });
     }
 
-    public fsWriteAsync(
+    public async fsWriteAsync(
             fd: number, buffer: Buffer | Uint8Array, offset: number,
             length: number, position: number): Promise<number> {
-        return new Promise((resolve, reject) => {
+        return new Promise<number>((resolve, reject) => {
             write(fd, buffer, offset, length, position, (err, bytesWritten) => {
                 if (err) {
                     return reject(err);

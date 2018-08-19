@@ -69,6 +69,28 @@ describe('Concurrent stream tests', () => {
         }
     });
 
+    it('does not emit close when autoClose is not set and fd opened', async done => {
+        concurrent = new ConcurrentStream(blobIn, { autoClose: false });
+        fsOpenMock = jest.spyOn(concurrent, 'fsOpenAsync');
+        fsCloseMock = jest.spyOn(concurrent, 'fsCloseAsync');
+
+        concurrent.on('error', done.fail);
+        concurrent.on('close', done.fail);
+        fsOpenMock.mockResolvedValue(0);
+        fsCloseMock.mockResolvedValue(undefined);
+        const N = 5;
+        for (let i = 0; i < N; ++i) {
+            concurrent.ref();
+            await concurrent.openAsync();
+        }
+        for (let i = 0; i < N; ++i) {
+            concurrent.unref();
+        }
+        expect(fsOpenMock).toHaveBeenCalledTimes(1);
+        expect(fsCloseMock).not.toHaveBeenCalled();
+        setImmediate(done);
+    });
+
     it('emits close when autoClose is set and fd not opened', async done => {
         concurrent.on('error', done.fail);
         concurrent.on('close', () => {
@@ -82,6 +104,26 @@ describe('Concurrent stream tests', () => {
         concurrent.unref();
     });
 
+    it('emits error when autoClose is set and error occured', async done => {
+        concurrent.on('error', (err) => {
+            expect(() => { throw err; }).toThrowError(closeError);
+            expect(fsOpenMock).toHaveBeenCalledTimes(1);
+            expect(fsCloseMock).toHaveBeenCalledTimes(1);
+            done();
+        });
+        concurrent.on('close', done.fail);
+        fsOpenMock.mockResolvedValue(0);
+        fsCloseMock.mockRejectedValue(closeError);
+        const N = 5;
+        for (let i = 0; i < N; ++i) {
+            concurrent.ref();
+            await concurrent.openAsync();
+        }
+        for (let i = 0; i < N; ++i) {
+            concurrent.unref();
+        }
+    });
+
     it('does not not open and close fd more than once', async done => {
         concurrent.on('error', done.fail);
         fsOpenMock.mockResolvedValue(0);
@@ -93,70 +135,6 @@ describe('Concurrent stream tests', () => {
         expect(fsOpenMock).toHaveBeenCalledTimes(1);
         expect(fsCloseMock).toHaveBeenCalledTimes(1);
         done();
-    });
-
-    it('emits error when open error occured', async done => {
-        concurrent.on('error', err => {
-            expect(() => { throw err; }).toThrowError(openError);
-            done();
-        });
-        fsOpenMock.mockRejectedValue(openError);
-        await concurrent.openAsync();
-    });
-
-    it('emits error when close error occured', async done => {
-        concurrent.on('error', err => {
-            expect(() => { throw err; }).toThrowError(closeError);
-            done();
-        });
-        fsOpenMock.mockResolvedValue(0);
-        fsCloseMock.mockRejectedValue(closeError);
-        await concurrent.openAsync();
-        await concurrent.closeAsync();
-    });
-
-    it('emits error whilst reading and open error occured', async done => {
-        concurrent.on('error', err => {
-            expect(() => { throw err; }).toThrowError(openError);
-            done();
-        });
-        fsOpenMock.mockRejectedValue(openError);
-        await concurrent.openAsync();
-        await concurrent.readAsync(dummy, 0, dummy.length, 0);
-    });
-
-    it('emits error whilst reading and read error occured', async done => {
-        concurrent.on('error', err => {
-            expect(err).toBe(readError);
-            done();
-        });
-
-        fsOpenMock.mockResolvedValue(0);
-        fsReadMock.mockRejectedValue(readError);
-        await concurrent.openAsync();
-        await concurrent.readAsync(dummy, 0, dummy.length, 0);
-    });
-
-    it('emits error whilst writing and open error occured', async done => {
-        concurrent.on('error', err => {
-            expect(() => { throw err; }).toThrowError(openError);
-            done();
-        });
-        fsOpenMock.mockRejectedValue(openError);
-        fsWriteMock.mockRejectedValue(writeError);
-        await concurrent.openAsync();
-        await concurrent.writeAsync(dummy, 0, dummy.length, 0);
-    });
-
-    it('emits error whilst writing and write error occured', async done => {
-        concurrent.on('error', err => {
-            expect(() => { throw err; }).toThrowError(writeError);
-            done();
-        });
-        fsOpenMock.mockResolvedValue(0);
-        fsWriteMock.mockRejectedValue(writeError);
-        await concurrent.openAsync();
-        await concurrent.writeAsync(dummy, 0, dummy.length, 0);
     });
 
     it('cancels read when cancelling condition is satisfied', async done => {

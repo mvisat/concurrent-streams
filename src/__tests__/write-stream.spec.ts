@@ -217,4 +217,23 @@ describe('Write stream tests', () => {
                     expect(() => { throw err; }).toThrowError(writeError);
                 }));
     });
+
+    it('unrefs when fs.write error occured', done => {
+        const concurrent = new ConcurrentStream(blobOut, { flags: 'w' })
+            .on('error', done.fail)
+            .on('close', done);
+
+        const fs = require('fs');
+        const writeMock = jest.spyOn(fs, 'write');
+        writeMock.mockImplementationOnce((fd, buf, offset, length, pos, cb) => {
+            cb(writeError);
+        });
+        expect.assertions(1);
+
+        createRandomStream(blobSize)
+            .pipe(concurrent.createWriteStream()
+                .on('error', err => {
+                    expect(() => { throw err; }).toThrowError(writeError);
+                }));
+    });
 });

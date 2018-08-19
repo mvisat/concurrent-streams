@@ -68,7 +68,7 @@ export class WriteStream extends Writable {
         }
 
         if (this.pos + buffer.length > this.options.end) {
-            this.destroy();
+            this._close();
             callback(ErrInvalidOffset);
             return;
         }
@@ -82,7 +82,7 @@ export class WriteStream extends Writable {
                 this.emit('progress', this.bytesWritten);
                 callback();
             } catch (err) {
-                this.destroy();
+                this._close();
                 callback(err);
             }
         })();

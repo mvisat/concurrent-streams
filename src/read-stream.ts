@@ -56,7 +56,7 @@ export class ReadStream extends Readable {
             try {
                 const bytesRead = await this.context.readAsync(
                     buf, 0, toRead, this.pos, () => this.closed);
-                if (bytesRead === 0) {
+                if (!bytesRead) {
                     this.push(null);
                     this._close();
                     return;
@@ -65,7 +65,6 @@ export class ReadStream extends Readable {
                 this.push(buf.slice(0, bytesRead));
             } catch (err) {
                 this.destroy(err);
-                this.emit('error', err);
             }
         })();
     }
