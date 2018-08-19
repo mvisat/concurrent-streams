@@ -93,9 +93,9 @@ describe('Read stream tests', () => {
         expectEqualStreams(actualStreams, expectedStreams, done);
     });
 
-    it('reads file with start offset', done => {
+    it('reads file with offset', done => {
         concurrent.on('error', done.fail);
-        const opts = { start: 1 };
+        const opts = { start: 10, end: 100 };
         const actualStream = concurrent.createReadStream(opts);
         const expectedStream = createReadStream(blobIn, opts);
         expectEqualStream(actualStream, expectedStream, done);

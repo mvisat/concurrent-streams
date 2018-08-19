@@ -43,7 +43,7 @@ export class ReadStream extends Readable {
 
         let toRead = Math.min(waterMark, size);
         if (this.options.end >= 0) {
-            toRead = Math.min(toRead, this.options.end - this.pos);
+            toRead = Math.min(toRead, this.options.end - this.pos + 1);
         }
         if (toRead <= 0) {
             this.push(null);
