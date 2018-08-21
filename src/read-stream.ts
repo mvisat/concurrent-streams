@@ -14,6 +14,21 @@ const defaultOptions: ReadStreamOptions = {
     highWaterMark: 64 * 1024,
 };
 
+function validateOptions(options: ReadStreamOptions) {
+    if (typeof options.start !== 'number' || isNaN(options.start)) {
+        throw new TypeError('"start" option must be a number');
+    }
+    if (typeof options.end !== 'number' || isNaN(options.end)) {
+        throw new TypeError('"end" option must be a number');
+    }
+    if (options.start < 0 || options.end < 0) {
+        throw new Error('"start" and "end" option must be >= 0');
+    }
+    if (options.start > options.end) {
+        throw new Error('"start" option must be <= "end" option');
+    }
+}
+
 export class ReadStream extends Readable {
     private context: ConcurrentStream;
     private options: ReadStreamOptions;
@@ -22,6 +37,7 @@ export class ReadStream extends Readable {
 
     constructor(context: ConcurrentStream, options: ReadStreamOptions) {
         options = Object.assign({}, defaultOptions, options);
+        validateOptions(options);
         super(options);
 
         this.context = context;
@@ -42,7 +58,7 @@ export class ReadStream extends Readable {
         const waterMark = this._readableState.highWaterMark;
 
         let toRead = Math.min(waterMark, size);
-        if (this.options.end >= 0) {
+        if (this.options.end !== Infinity) {
             toRead = Math.min(toRead, this.options.end - this.pos + 1);
         }
         if (toRead <= 0) {

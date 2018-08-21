@@ -14,6 +14,21 @@ const defaultOptions: WriteStreamOptions = {
     highWaterMark: 64 * 1024,
 };
 
+function validateOptions(options: WriteStreamOptions) {
+    if (typeof options.start !== 'number' || isNaN(options.start)) {
+        throw new TypeError('"start" option must be a number');
+    }
+    if (typeof options.end !== 'number' || isNaN(options.end)) {
+        throw new TypeError('"end" option must be a number');
+    }
+    if (options.start < 0 || options.end < 0) {
+        throw new Error('"start" and "end" option must be >= 0');
+    }
+    if (options.start > options.end) {
+        throw new Error('"start" option must be <= "end" option');
+    }
+}
+
 export class WriteStream extends Writable {
     private context: ConcurrentStream;
     private options: WriteStreamOptions;
@@ -23,7 +38,8 @@ export class WriteStream extends Writable {
 
     constructor(context: ConcurrentStream, options: WriteStreamOptions) {
         options = Object.assign({}, defaultOptions, options);
-        super();
+        validateOptions(options);
+        super(options);
 
         this.context = context;
         this.context.ref();

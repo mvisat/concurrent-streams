@@ -76,6 +76,16 @@ describe('Write stream tests', () => {
         done();
     });
 
+    it('throws error when invalid option is given', done => {
+        const concurrent = new ConcurrentStream(blobOut);
+        expect(() => { concurrent.createWriteStream({ start: NaN }); }).toThrow();
+        expect(() => { concurrent.createWriteStream({ start: -1 }); }).toThrow();
+        expect(() => { concurrent.createWriteStream({ end: NaN }); }).toThrow();
+        expect(() => { concurrent.createWriteStream({ end: -1 }); }).toThrow();
+        expect(() => { concurrent.createWriteStream({ start: 10, end: 0 }); }).toThrow();
+        done();
+    });
+
     it('writes file', done => {
         const concurrent = new ConcurrentStream(blobOut, { flags: 'w' })
             .on('error', done.fail)

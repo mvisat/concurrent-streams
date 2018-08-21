@@ -73,6 +73,15 @@ describe('Read stream tests', () => {
         done();
     });
 
+    it('throws error when invalid option is given', done => {
+        expect(() => { concurrent.createReadStream({ start: NaN }); }).toThrow();
+        expect(() => { concurrent.createReadStream({ start: -1 }); }).toThrow();
+        expect(() => { concurrent.createReadStream({ end: NaN }); }).toThrow();
+        expect(() => { concurrent.createReadStream({ end: -1 }); }).toThrow();
+        expect(() => { concurrent.createReadStream({ start: 10, end: 0 }); }).toThrow();
+        done();
+    });
+
     it('reads file', done => {
         concurrent.on('error', done.fail);
         const actualStream = concurrent.createReadStream();
