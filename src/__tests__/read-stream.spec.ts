@@ -27,8 +27,8 @@ function expectEqualStreams(
         actualStreams: Array<ReadStream | fs.ReadStream>,
         expectedStreams: Array<ReadStream | fs.ReadStream>,
         done: jest.DoneCallback) {
-    async function getHash(stream: ReadStream) {
-        return new Promise((resolve, reject) => {
+    async function getHash(stream: ReadStream | fs.ReadStream) {
+        return new Promise<string | Buffer>((resolve, reject) => {
             const hash = createHash('md5').setEncoding('hex');
             stream
                 .on('error', reject)

@@ -10,7 +10,7 @@
     "sourceMap": true,
     "outDir": "dist",
     "declaration": true,
-    "noImplicitAny": true
+    "strict": true
   },
   "exclude": [
     ".vscode",

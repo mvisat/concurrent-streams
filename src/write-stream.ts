@@ -36,7 +36,7 @@ export class WriteStream extends Writable {
     private bytesWritten: number;
     private closed: boolean;
 
-    constructor(context: ConcurrentStream, options: WriteStreamOptions) {
+    constructor(context: ConcurrentStream, options?: WriteStreamOptions) {
         options = Object.assign({}, defaultOptions, options);
         validateOptions(options);
         super(options);
@@ -45,7 +45,7 @@ export class WriteStream extends Writable {
         this.context.ref();
         this.options = options;
 
-        this.pos = options.start;
+        this.pos = options.start!;
         this.bytesWritten = 0;
         this.closed = false;
     }
@@ -64,7 +64,7 @@ export class WriteStream extends Writable {
         callback();
     }
 
-    public _destroy(error: Error, callback: (error?: Error) => void): void {
+    public _destroy(error: Error | null, callback: (error: Error | null) => void): void {
         this._close();
         callback(error);
     }
@@ -83,7 +83,8 @@ export class WriteStream extends Writable {
             return;
         }
 
-        if (this.pos + buffer.length > this.options.end) {
+        const end = this.options.end || Infinity;
+        if (this.pos + buffer.length > end) {
             this._close();
             callback(ErrInvalidOffset);
             return;

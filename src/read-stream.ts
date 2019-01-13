@@ -35,7 +35,7 @@ export class ReadStream extends Readable {
     private pos: number;
     private closed: boolean;
 
-    constructor(context: ConcurrentStream, options: ReadStreamOptions) {
+    constructor(context: ConcurrentStream, options?: ReadStreamOptions) {
         options = Object.assign({}, defaultOptions, options);
         validateOptions(options);
         super(options);
@@ -44,7 +44,7 @@ export class ReadStream extends Readable {
         this.context.ref();
         this.options = options;
 
-        this.pos = this.options.start;
+        this.pos = options.start!;
         this.closed = false;
     }
 
@@ -55,8 +55,9 @@ export class ReadStream extends Readable {
 
         const waterMark = this.readableHighWaterMark;
         let toRead = Math.min(waterMark, size);
-        if (this.options.end !== Infinity) {
-            toRead = Math.min(toRead, this.options.end - this.pos + 1);
+        const end = this.options.end || Infinity;
+        if (end !== Infinity) {
+            toRead = Math.min(toRead, end - this.pos + 1);
         }
         if (toRead <= 0) {
             this.push(null);
@@ -82,7 +83,7 @@ export class ReadStream extends Readable {
         })();
     }
 
-    public _destroy(error: Error, callback: (error?: Error) => void): void {
+    public _destroy(error: Error | null, callback: (error: Error | null) => void): void {
         this._close();
         callback(error);
     }

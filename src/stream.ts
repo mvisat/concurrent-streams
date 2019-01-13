@@ -32,7 +32,7 @@ export class ConcurrentStream extends EventEmitter {
 
     private path: string;
     private options: StreamOptions;
-    private fd: number;
+    private fd: number | null;
 
     private refCount = 0;
     private lock = new RWLock();
@@ -42,7 +42,7 @@ export class ConcurrentStream extends EventEmitter {
 
         this.path = path;
         this.options = Object.assign({}, defaultOptions, options);
-        this.fd = this.options.fd;
+        this.fd = this.options.fd || null;
     }
 
     public createReadStream(options?: ReadStreamOptions): ReadStream {
@@ -86,7 +86,7 @@ export class ConcurrentStream extends EventEmitter {
             return;
         }
 
-        this.fd = await this.fsOpenAsync(this.path, this.options.flags, this.options.mode);
+        this.fd = await this.fsOpenAsync(this.path, this.options.flags!, this.options.mode);
         this.emit('open', this.fd);
     }
 
@@ -104,13 +104,13 @@ export class ConcurrentStream extends EventEmitter {
             buffer: Buffer | Uint8Array, offset: number, length: number,
             position: number, cancels?: () => boolean): Promise<number> {
         if (typeof cancels === 'function' && cancels()) {
-            return;
+            return 0;
         }
 
         await this.lock.readLock();
         try {
             await this.openAsync();
-            return await this.fsReadAsync(this.fd, buffer, offset, length, position);
+            return await this.fsReadAsync(this.fd!, buffer, offset, length, position);
         } finally {
             this.lock.unlock();
         }
@@ -120,13 +120,13 @@ export class ConcurrentStream extends EventEmitter {
             buffer: Buffer | Uint8Array, offset: number, length: number,
             position: number, cancels?: () => boolean): Promise<number> {
         if (typeof cancels === 'function' && cancels()) {
-            return;
+            return 0;
         }
 
         await this.lock.writeLock();
         try {
             await this.openAsync();
-            return await this.fsWriteAsync(this.fd, buffer, offset, length, position);
+            return await this.fsWriteAsync(this.fd!, buffer, offset, length, position);
         } finally {
             this.lock.unlock();
         }
