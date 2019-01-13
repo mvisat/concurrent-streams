@@ -6,9 +6,9 @@ import { promisify } from 'util';
 import { createRandomStream } from 'random-readable';
 import { tmpNameSync } from 'tmp';
 
+import { ReadStream } from '../read-stream';
 import { ConcurrentStream, ErrInvalidOffset } from '../stream';
 import { WriteStream } from '../write-stream';
-import { ReadStream } from '../read-stream';
 
 const unlinkAsync = promisify(unlink);
 
@@ -116,8 +116,8 @@ describe('Write stream tests', () => {
                     createReadStream(blobOut),
                     done);
             });
-        const actualStreams: Array<WriteStream> = [];
-        const inStreams: Array<fs.ReadStream> = [];
+        const actualStreams: WriteStream[] = [];
+        const inStreams: fs.ReadStream[] = [];
         const N = 4;
         for (let i = 0; i < N; ++i) {
             const start = blobSize * i / 4;
@@ -242,7 +242,6 @@ describe('Write stream tests', () => {
             .on('error', done.fail)
             .on('close', done);
 
-        const fs = require('fs');
         const writeMock = jest.spyOn(fs, 'write');
         writeMock.mockImplementationOnce((fd, buf, offset, length, pos, cb) => {
             cb(writeError);

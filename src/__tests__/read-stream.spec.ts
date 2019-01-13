@@ -7,8 +7,8 @@ import { NullWritable } from 'null-writable';
 import { createRandomStream } from 'random-readable';
 import { tmpNameSync } from 'tmp';
 
-import { ConcurrentStream } from '../stream';
 import { ReadStream } from '../read-stream';
+import { ConcurrentStream } from '../stream';
 
 const unlinkAsync = promisify(unlink);
 
@@ -99,8 +99,8 @@ describe('Read stream tests', () => {
 
     it('reads 4 chunks simultaneously', done => {
         concurrent.on('error', done.fail);
-        const actualStreams: Array<ReadStream> = [];
-        const expectedStreams: Array<ReadStream> = [];
+        const actualStreams: ReadStream[] = [];
+        const expectedStreams: ReadStream[] = [];
         const N = 4;
         for (let i = 0; i < N; ++i) {
             const opt = { start: blobSize * i / N, end: blobSize * (i + 1) / N };
@@ -154,7 +154,6 @@ describe('Read stream tests', () => {
         });
         expect.assertions(1);
 
-        const fs = require('fs');
         const readMock = jest.spyOn(fs, 'read');
         readMock.mockImplementationOnce((fd, buf, offset, length, pos, cb) => {
             cb(readError);
