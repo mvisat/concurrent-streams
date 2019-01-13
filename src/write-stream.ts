@@ -79,12 +79,12 @@ export class WriteStream extends Writable {
     }
 
     private _actualWrite(buffer: Buffer | Uint8Array, callback: (error?: Error) => void): void {
+        /* istanbul ignore if */
         if (this.closed) {
             return;
         }
 
-        const end = this.options.end || Infinity;
-        if (this.pos + buffer.length > end) {
+        if (this.pos + buffer.length > this.options.end!) {
             this._close();
             callback(ErrInvalidOffset);
             return;

@@ -55,9 +55,8 @@ export class ReadStream extends Readable {
 
         const waterMark = this.readableHighWaterMark;
         let toRead = Math.min(waterMark, size);
-        const end = this.options.end || Infinity;
-        if (end !== Infinity) {
-            toRead = Math.min(toRead, end - this.pos + 1);
+        if (typeof this.options.end === 'number' && this.options.end !== Infinity) {
+            toRead = Math.min(toRead, this.options.end - this.pos + 1);
         }
         if (toRead <= 0) {
             this.push(null);
