@@ -53,10 +53,7 @@ export class ReadStream extends Readable {
             return;
         }
 
-        // TODO: fix this with `this.readableHighWaterMark` when using Node 9+
-        // @ts-ignore
-        const waterMark = this._readableState.highWaterMark;
-
+        const waterMark = this.readableHighWaterMark;
         let toRead = Math.min(waterMark, size);
         if (this.options.end !== Infinity) {
             toRead = Math.min(toRead, this.options.end - this.pos + 1);
