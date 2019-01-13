@@ -10,11 +10,11 @@ const blobIn = tmpNameSync();
 const blobOut = tmpNameSync();
 
 describe('Concurrent stream tests', () => {
-    let concurrent;
-    let fsOpenMock;
-    let fsCloseMock;
-    let fsReadMock;
-    let fsWriteMock;
+    let concurrent: ConcurrentStream;
+    let fsOpenMock: any;
+    let fsCloseMock: any;
+    let fsReadMock: any;
+    let fsWriteMock: any;
     const openError = new Error('Mock open error');
     const closeError = new Error('Mock close error');
     const readError = new Error('Mock read error');

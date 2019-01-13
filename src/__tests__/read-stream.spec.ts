@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import * as fs from 'fs';
 import { createReadStream, createWriteStream, unlink } from 'fs';
 import { promisify } from 'util';
 
@@ -7,6 +8,7 @@ import { createRandomStream } from 'random-readable';
 import { tmpNameSync } from 'tmp';
 
 import { ConcurrentStream } from '../stream';
+import { ReadStream } from '../read-stream';
 
 const unlinkAsync = promisify(unlink);
 
@@ -14,12 +16,18 @@ const blobSize = 1 * 1024 * 1024;
 const blobIn = tmpNameSync();
 const blobOut = tmpNameSync();
 
-function expectEqualStream(actualStream, expectedStream, done) {
+function expectEqualStream(
+        actualStream: ReadStream | fs.ReadStream,
+        expectedStream: ReadStream | fs.ReadStream,
+        done: jest.DoneCallback) {
     expectEqualStreams([actualStream], [expectedStream], done);
 }
 
-function expectEqualStreams(actualStreams, expectedStreams, done) {
-    async function getHash(stream) {
+function expectEqualStreams(
+        actualStreams: Array<ReadStream | fs.ReadStream>,
+        expectedStreams: Array<ReadStream | fs.ReadStream>,
+        done: jest.DoneCallback) {
+    async function getHash(stream: ReadStream) {
         return new Promise((resolve, reject) => {
             const hash = createHash('md5').setEncoding('hex');
             stream
@@ -46,7 +54,7 @@ function expectEqualStreams(actualStreams, expectedStreams, done) {
 }
 
 describe('Read stream tests', () => {
-    let concurrent;
+    let concurrent: ConcurrentStream;
     const readError = new Error('Mock read error');
 
     beforeAll(done => {
@@ -91,8 +99,8 @@ describe('Read stream tests', () => {
 
     it('reads 4 chunks simultaneously', done => {
         concurrent.on('error', done.fail);
-        const actualStreams = [];
-        const expectedStreams = [];
+        const actualStreams: Array<ReadStream> = [];
+        const expectedStreams: Array<ReadStream> = [];
         const N = 4;
         for (let i = 0; i < N; ++i) {
             const opt = { start: blobSize * i / N, end: blobSize * (i + 1) / N };

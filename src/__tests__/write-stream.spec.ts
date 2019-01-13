@@ -1,4 +1,5 @@
 import { createHash } from 'crypto';
+import * as fs from 'fs';
 import { createReadStream, createWriteStream, unlink } from 'fs';
 import { promisify } from 'util';
 
@@ -6,6 +7,8 @@ import { createRandomStream } from 'random-readable';
 import { tmpNameSync } from 'tmp';
 
 import { ConcurrentStream, ErrInvalidOffset } from '../stream';
+import { WriteStream } from '../write-stream';
+import { ReadStream } from '../read-stream';
 
 const unlinkAsync = promisify(unlink);
 
@@ -13,12 +16,18 @@ const blobSize = 1 * 1024 * 1024;
 const blobIn = tmpNameSync();
 const blobOut = tmpNameSync();
 
-function expectEqualStream(actualStream, expectedStream, done) {
+function expectEqualStream(
+        actualStream: ReadStream | fs.ReadStream,
+        expectedStream: ReadStream | fs.ReadStream,
+        done: jest.DoneCallback) {
     expectEqualStreams([actualStream], [expectedStream], done);
 }
 
-function expectEqualStreams(actualStreams, expectedStreams, done) {
-    async function getHash(stream) {
+function expectEqualStreams(
+        actualStreams: Array<ReadStream | fs.ReadStream>,
+        expectedStreams: Array<ReadStream | fs.ReadStream>,
+        done: jest.DoneCallback) {
+    async function getHash(stream: ReadStream) {
         return new Promise((resolve, reject) => {
             const hash = createHash('md5').setEncoding('hex');
             stream
@@ -107,8 +116,8 @@ describe('Write stream tests', () => {
                     createReadStream(blobOut),
                     done);
             });
-        const actualStreams = [];
-        const inStreams = [];
+        const actualStreams: Array<WriteStream> = [];
+        const inStreams: Array<fs.ReadStream> = [];
         const N = 4;
         for (let i = 0; i < N; ++i) {
             const start = blobSize * i / 4;
