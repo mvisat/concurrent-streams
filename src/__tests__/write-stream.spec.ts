@@ -156,7 +156,7 @@ describe('Write stream tests', () => {
                 expect(() => { throw err; }).toThrowError(ErrInvalidOffset);
             })
             .on('finish', done)
-            .end(new Buffer(101));
+            .end(Buffer.alloc(101));
     });
 
     it('emits error when end offset exceeded and start is a positive number', done => {
@@ -168,7 +168,7 @@ describe('Write stream tests', () => {
                 expect(() => { throw err; }).toThrowError(ErrInvalidOffset);
             })
             .on('finish', done)
-            .end(new Buffer(100));
+            .end(Buffer.alloc(100));
     });
 
     it('does not emit error when end offset not exceeded', done => {
@@ -177,7 +177,7 @@ describe('Write stream tests', () => {
             .createWriteStream({ start: 0, end: 100 })
             .on('error', done.fail)
             .on('finish', done)
-            .end(new Buffer(100));
+            .end(Buffer.alloc(100));
     });
 
     it('emits progress event', done => {
