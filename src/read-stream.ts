@@ -76,6 +76,7 @@ export class ReadStream extends Readable {
                 }
                 this.pos += bytesRead;
                 this.push(buf.slice(0, bytesRead));
+                this.emit('read', bytesRead);
             } catch (err) {
                 this.destroy(err);
             }

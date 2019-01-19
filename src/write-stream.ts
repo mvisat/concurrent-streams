@@ -96,7 +96,7 @@ export class WriteStream extends Writable {
                     buffer, 0, buffer.length, this.pos, () => this.closed);
                 this.pos += bytesWritten;
                 this.bytesWritten += bytesWritten;
-                this.emit('progress', this.bytesWritten);
+                this.emit('written', bytesWritten);
                 callback();
             } catch (err) {
                 this._close();
