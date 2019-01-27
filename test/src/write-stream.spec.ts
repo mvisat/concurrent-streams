@@ -10,7 +10,6 @@ import {
 import { PassThrough } from 'stream';
 
 describe('write stream tests', function() {
-    this.timeout(100);
     const path = '/out/path';
 
     let sandbox: sinon.SinonSandbox;

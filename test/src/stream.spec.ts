@@ -9,7 +9,6 @@ import {
 } from '../../src';
 
 describe('concurrent stream tests', function() {
-    this.timeout(100);
     const path = '/out/path';
 
     let sandbox: sinon.SinonSandbox;

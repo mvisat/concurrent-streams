@@ -10,7 +10,6 @@ import {
 } from '../../src';
 
 describe('read stream tests', function() {
-    this.timeout(100);
     const path = '/out/path';
 
     let sandbox: sinon.SinonSandbox;
