@@ -1,0 +1,21 @@
+sudo: false
+
+language: node_js
+
+node_js:
+  - node
+  - 11
+  - 10
+
+cache: yarn
+
+install:
+  - yarn global add codecov
+  - yarn
+
+script:
+  - yarn test
+
+after_success:
+  - nyc report --reporter=lcov
+  - codecov -f coverage/lcov.info
