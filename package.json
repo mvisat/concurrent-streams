@@ -7,9 +7,9 @@
   "files": ["dist/**/*"],
   "scripts": {
     "build": "tsc",
-    "format": "prettier --write 'src/**/*.ts'",
     "lint": "tslint --project tsconfig.json",
-    "prepublishOnly": "yarn test && yarn lint",
+    "pretty": "yarn lint && prettier --write 'src/**/*.ts'",
+    "prepublishOnly": "yarn lint && yarn test",
     "test": "nyc mocha"
   },
   "repository": {
@@ -69,8 +69,8 @@
       "**/*.d.ts"
     ],
     "reporter": [
-      "text",
-      "html"
+      "html",
+      "text"
     ],
     "all": true
   }
