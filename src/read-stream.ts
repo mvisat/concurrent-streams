@@ -50,7 +50,10 @@ export class ReadStream extends Readable {
         }
     }
 
-    public async _destroy(error: Error | null, callback: (error: Error | null) => void): Promise<void> {
+    public async _destroy(
+        error: Error | null,
+        callback: (error: Error | null) => void,
+    ): Promise<void> {
         await this._close();
         this.push(null);
         callback(error);

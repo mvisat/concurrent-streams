@@ -8,8 +8,9 @@ const defaultOptions: ReadStreamOptions | WriteStreamOptions = {
 };
 
 export function applyDefaultOptions(
-        options?: ReadStreamOptions | WriteStreamOptions): ReadStreamOptions | WriteStreamOptions {
-    options = Object.assign({}, defaultOptions, options);
+    options?: ReadStreamOptions | WriteStreamOptions,
+): ReadStreamOptions | WriteStreamOptions {
+    options = { ...defaultOptions, ...options };
     if (typeof options.start !== 'number' || isNaN(options.start)) {
         throw new TypeError('"start" option must be a number');
     }

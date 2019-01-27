@@ -1,12 +1,10 @@
 {
     "extends": [
-        "tslint:recommended",
-        "tslint-eslint-rules"
+        "tslint:latest",
+        "tslint-config-prettier"
     ],
     "rules": {
         "interface-name": [true, "never-prefix"],
-        "object-literal-sort-keys": false,
-        "quotemark": ["single"],
-        "variable-name": ["check-format", "allow-leading-underscore"]
+        "object-literal-sort-keys": false
     }
 }

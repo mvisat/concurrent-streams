@@ -27,16 +27,18 @@ export class WriteStream extends Writable {
     }
 
     public async _write(
-            buffer: Buffer | Uint8Array,
-            encoding: string,
-            callback: (error?: Error) => void): Promise<void> {
+        buffer: Buffer | Uint8Array,
+        encoding: string,
+        callback: (error?: Error) => void,
+    ): Promise<void> {
         return this._actualWrite(buffer, callback);
     }
 
     public async _writev(
-            buffers: Array<{chunk: any, encoding: string}>,
-            callback: (error?: Error) => void): Promise<void> {
-        const buffer = Buffer.concat(buffers.map((buf) => buf.chunk));
+        buffers: Array<{ chunk: any; encoding: string }>,
+        callback: (error?: Error) => void,
+    ): Promise<void> {
+        const buffer = Buffer.concat(buffers.map(buf => buf.chunk));
         return this._actualWrite(buffer, callback);
     }
 
@@ -46,16 +48,18 @@ export class WriteStream extends Writable {
     }
 
     public async _destroy(
-            error: Error | null,
-            callback: (error: Error | null) => void): Promise<void> {
+        error: Error | null,
+        callback: (error: Error | null) => void,
+    ): Promise<void> {
         await this._close();
         this.end();
         callback(error);
     }
 
     private async _actualWrite(
-            buffer: Buffer | Uint8Array,
-            callback: (error?: Error) => void): Promise<void> {
+        buffer: Buffer | Uint8Array,
+        callback: (error?: Error) => void,
+    ): Promise<void> {
         if (this.current + buffer.length > this.endOffset) {
             await this._close();
             return callback(ErrInvalidOffset);
@@ -79,5 +83,4 @@ export class WriteStream extends Writable {
         this.closed = true;
         this.context.unref();
     }
-
 }

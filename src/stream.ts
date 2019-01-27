@@ -27,7 +27,7 @@ const defaultOptions: StreamOptions = {
 };
 
 function applyDefaultOptions(options?: StreamOptions): StreamOptions {
-    options = Object.assign({}, defaultOptions, options);
+    options = { ...defaultOptions, ...options };
     if (typeof options.flags !== 'string') {
         throw new TypeError('"flags" option must be a string');
     }
@@ -93,7 +93,7 @@ export class ConcurrentStream extends Emittery {
             this.emit('close');
             return;
         }
-        this.close().catch((err) => {
+        this.close().catch(err => {
             this.emit('error', err);
         });
     }
@@ -119,10 +119,7 @@ export class ConcurrentStream extends Emittery {
 
     public async read(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
-            await Promise.all([
-                this.lock.readLock(),
-                this.open(),
-            ]);
+            await Promise.all([this.lock.readLock(), this.open()]);
             return readAsync(this.fd, buffer, 0, buffer.length, position);
         } finally {
             this.lock.unlock();
@@ -131,10 +128,7 @@ export class ConcurrentStream extends Emittery {
 
     public async write(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
-            await Promise.all([
-                this.lock.writeLock(),
-                this.open(),
-            ]);
+            await Promise.all([this.lock.writeLock(), this.open()]);
             return writeAsync(this.fd, buffer, 0, buffer.length, position);
         } finally {
             this.lock.unlock();
@@ -149,11 +143,12 @@ const closeAsync = promisify(close);
 // sometimes it only returns `bytesRead` or `bytesWritten`
 // we don't need the `buffer`, so we can just omit it
 async function readAsync(
-        fd: number,
-        buffer: Buffer | Uint8Array,
-        offset: number,
-        length: number,
-        position: number): Promise<number> {
+    fd: number,
+    buffer: Buffer | Uint8Array,
+    offset: number,
+    length: number,
+    position: number,
+): Promise<number> {
     return new Promise<number>((resolve, reject) => {
         read(fd, buffer, offset, length, position, (err, bytesRead) => {
             if (err) {
@@ -165,11 +160,12 @@ async function readAsync(
 }
 
 async function writeAsync(
-        fd: number,
-        buffer: Buffer | Uint8Array,
-        offset: number,
-        length: number,
-        position: number): Promise<number> {
+    fd: number,
+    buffer: Buffer | Uint8Array,
+    offset: number,
+    length: number,
+    position: number,
+): Promise<number> {
     return new Promise<number>((resolve, reject) => {
         write(fd, buffer, offset, length, position, (err, bytesWritten) => {
             if (err) {
