@@ -1,39 +1,57 @@
-import { EventEmitter } from 'events';
 import { close, open, read, write } from 'fs';
 import { promisify } from 'util';
 
 import RWLock from 'async-rwlock';
+import * as Emittery from 'emittery';
 
 import { ReadStream, ReadStreamOptions } from './read-stream';
 import { WriteStream, WriteStreamOptions } from './write-stream';
 
 export interface StreamOptions {
     flags?: string;
-    encoding?: string | null;
-    fd?: number | null;
+    encoding?: string;
+    fd?: number;
     mode?: number;
     autoClose?: boolean;
 }
 
-export const ErrInvalidRef = new Error('invalid ref');
+export const ErrInvalidRefCount = new Error('invalid ref count');
 export const ErrInvalidOffset = new Error('invalid offset');
 
 const defaultOptions: StreamOptions = {
-    flags: 'r',
-    encoding: null,
-    fd: null,
+    flags: 'r+',
+    encoding: 'utf8',
+    fd: -1,
     mode: 0o666,
     autoClose: true,
 };
 
-export class ConcurrentStream extends EventEmitter {
-    public fsOpenAsync = promisify(open);
-    public fsCloseAsync = promisify(close);
+function applyDefaultOptions(options?: StreamOptions): StreamOptions {
+    options = Object.assign({}, defaultOptions, options);
+    if (typeof options.flags !== 'string') {
+        throw new TypeError('"flags" option must be a string');
+    }
+    if (typeof options.encoding !== 'string') {
+        throw new TypeError('"encoding" option must be a string');
+    }
+    if (typeof options.fd !== 'number' || !isFinite(options.fd)) {
+        throw new TypeError('"fd" option must be a finite number');
+    }
+    if (typeof options.mode !== 'number' || !isFinite(options.mode)) {
+        throw new TypeError('"mode" option must be a finite number');
+    }
+    if (typeof options.autoClose !== 'boolean') {
+        throw new TypeError('"autoClose" option must be a boolean');
+    }
+    return options;
+}
 
+export class ConcurrentStream extends Emittery {
     private path: string;
-    private options: StreamOptions;
-    private fd: number | null;
-
+    private flags: string;
+    private mode: number;
+    private autoClose: boolean;
+    private fd: number;
     private refCount = 0;
     private lock = new RWLock();
 
@@ -41,8 +59,12 @@ export class ConcurrentStream extends EventEmitter {
         super();
 
         this.path = path;
-        this.options = Object.assign({}, defaultOptions, options);
-        this.fd = this.options.fd || null;
+
+        options = applyDefaultOptions(options);
+        this.flags = options.flags!;
+        this.mode = options.mode!;
+        this.autoClose = options.autoClose!;
+        this.fd = options.fd!;
     }
 
     public createReadStream(options?: ReadStreamOptions): ReadStream {
@@ -59,105 +81,101 @@ export class ConcurrentStream extends EventEmitter {
 
     public unref(): void {
         this.refCount--;
-
-        if (this.refCount > 0) { return; }
         if (this.refCount < 0) {
-            this.emit('error', ErrInvalidRef);
+            this.emit('error', ErrInvalidRefCount);
+            return;
+        }
+        if (this.refCount > 0 || !this.autoClose) {
             return;
         }
 
-        if (this.options.autoClose) {
-            if (typeof this.fd === 'number') {
-                (async () => {
-                    try {
-                        await this.closeAsync();
-                    } catch (err) {
-                        this.emit('error', err);
-                    }
-                })();
-            } else {
-                this.emit('close');
-            }
+        if (this.fd < 0) {
+            this.emit('close');
+            return;
         }
+        this.close().catch((err) => {
+            this.emit('error', err);
+        });
     }
 
-    public async openAsync() {
-        if (typeof this.fd === 'number') {
+    public async open(): Promise<void> {
+        if (this.fd >= 0) {
             return;
         }
 
-        this.fd = await this.fsOpenAsync(this.path, this.options.flags!, this.options.mode);
+        this.fd = await openAsync(this.path, this.flags, this.mode);
         this.emit('open', this.fd);
     }
 
-    public async closeAsync() {
-        if (typeof this.fd !== 'number') {
+    public async close(): Promise<void> {
+        if (this.fd < 0) {
             return;
         }
 
-        await this.fsCloseAsync(this.fd);
+        await closeAsync(this.fd);
+        this.fd = -1;
         this.emit('close');
-        this.fd = null;
     }
 
-    public async readAsync(
-            buffer: Buffer | Uint8Array, offset: number, length: number,
-            position: number, cancels?: () => boolean): Promise<number> {
-        if (typeof cancels === 'function' && cancels()) {
-            return 0;
-        }
-
-        await this.lock.readLock();
+    public async read(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
-            await this.openAsync();
-            return await this.fsReadAsync(this.fd!, buffer, offset, length, position);
+            await Promise.all([
+                this.lock.readLock(),
+                this.open(),
+            ]);
+            return readAsync(this.fd, buffer, 0, buffer.length, position);
         } finally {
             this.lock.unlock();
         }
     }
 
-    public async writeAsync(
-            buffer: Buffer | Uint8Array, offset: number, length: number,
-            position: number, cancels?: () => boolean): Promise<number> {
-        if (typeof cancels === 'function' && cancels()) {
-            return 0;
-        }
-
-        await this.lock.writeLock();
+    public async write(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
-            await this.openAsync();
-            return await this.fsWriteAsync(this.fd!, buffer, offset, length, position);
+            await Promise.all([
+                this.lock.writeLock(),
+                this.open(),
+            ]);
+            return writeAsync(this.fd, buffer, 0, buffer.length, position);
         } finally {
             this.lock.unlock();
         }
     }
+}
 
-    // workaround for promisified version of `fs.read` and `fs.write`
-    // sometimes it only returns `bytesRead` or `bytesWritten`
-    // we don't need the `buffer`, so we can just omit it
-    public async fsReadAsync(
-            fd: number, buffer: Buffer | Uint8Array, offset: number,
-            length: number, position: number): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            read(fd, buffer, offset, length, position, (err, bytesRead) => {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(bytesRead);
-            });
-        });
-    }
+const openAsync = promisify(open);
+const closeAsync = promisify(close);
 
-    public async fsWriteAsync(
-            fd: number, buffer: Buffer | Uint8Array, offset: number,
-            length: number, position: number): Promise<number> {
-        return new Promise<number>((resolve, reject) => {
-            write(fd, buffer, offset, length, position, (err, bytesWritten) => {
-                if (err) {
-                    return reject(err);
-                }
-                resolve(bytesWritten);
-            });
+// workaround for promisified version of `fs.read` and `fs.write`
+// sometimes it only returns `bytesRead` or `bytesWritten`
+// we don't need the `buffer`, so we can just omit it
+async function readAsync(
+        fd: number,
+        buffer: Buffer | Uint8Array,
+        offset: number,
+        length: number,
+        position: number): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+        read(fd, buffer, offset, length, position, (err, bytesRead) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(bytesRead);
         });
-    }
+    });
+}
+
+async function writeAsync(
+        fd: number,
+        buffer: Buffer | Uint8Array,
+        offset: number,
+        length: number,
+        position: number): Promise<number> {
+    return new Promise<number>((resolve, reject) => {
+        write(fd, buffer, offset, length, position, (err, bytesWritten) => {
+            if (err) {
+                return reject(err);
+            }
+            resolve(bytesWritten);
+        });
+    });
 }

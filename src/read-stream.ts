@@ -1,6 +1,7 @@
 import { Readable } from 'stream';
 
 import { ConcurrentStream } from './stream';
+import { applyDefaultOptions } from './util';
 
 export interface ReadStreamOptions {
     start?: number;
@@ -8,92 +9,58 @@ export interface ReadStreamOptions {
     highWaterMark?: number;
 }
 
-const defaultOptions: ReadStreamOptions = {
-    start: 0,
-    end: Infinity,
-    highWaterMark: 64 * 1024,
-};
-
-function validateOptions(options: ReadStreamOptions) {
-    if (typeof options.start !== 'number' || isNaN(options.start)) {
-        throw new TypeError('"start" option must be a number');
-    }
-    if (typeof options.end !== 'number' || isNaN(options.end)) {
-        throw new TypeError('"end" option must be a number');
-    }
-    if (options.start < 0 || options.end < 0) {
-        throw new Error('"start" and "end" option must be >= 0');
-    }
-    if (options.start > options.end) {
-        throw new Error('"start" option must be <= "end" option');
-    }
-}
-
 export class ReadStream extends Readable {
     private context: ConcurrentStream;
-    private options: ReadStreamOptions;
-    private pos: number;
-    private closed: boolean;
+    private current: number;
+    private end: number;
+    private closed = false;
 
     constructor(context: ConcurrentStream, options?: ReadStreamOptions) {
-        options = Object.assign({}, defaultOptions, options);
-        validateOptions(options);
         super(options);
 
         this.context = context;
         this.context.ref();
-        this.options = options;
 
-        this.pos = options.start!;
-        this.closed = false;
+        options = applyDefaultOptions(options);
+        this.current = options.start!;
+        this.end = options.end!;
     }
 
-    public _read(size: number): void {
-        if (this.closed) {
-            return;
+    public async _read(size: number): Promise<void> {
+        size = Math.min(size, this.end - this.current);
+        if (size <= 0) {
+            return this.destroy();
         }
 
-        const waterMark = this.readableHighWaterMark;
-        let toRead = Math.min(waterMark, size);
-        if (typeof this.options.end === 'number' && this.options.end !== Infinity) {
-            toRead = Math.min(toRead, this.options.end - this.pos + 1);
-        }
-        if (toRead <= 0) {
-            this.push(null);
-            this._close();
-            return;
-        }
-
-        (async () => {
-            const buf = Buffer.allocUnsafe(toRead);
-            try {
-                const bytesRead = await this.context.readAsync(
-                    buf, 0, toRead, this.pos, () => this.closed);
-                if (!bytesRead) {
-                    this.push(null);
-                    this._close();
-                    return;
-                }
-                this.pos += bytesRead;
-                this.push(buf.slice(0, bytesRead));
-                this.emit('read', bytesRead);
-            } catch (err) {
-                this.destroy(err);
+        const buffer = Buffer.allocUnsafe(size);
+        try {
+            const bytesRead = await this.context.read(buffer, this.current);
+            if (!bytesRead) {
+                return this.destroy();
             }
-        })();
+            this.current += bytesRead;
+            if (bytesRead < size) {
+                this.push(buffer.slice(0, bytesRead));
+            } else {
+                this.push(buffer);
+            }
+            this.emit('read', bytesRead);
+        } catch (err) {
+            return this.destroy(err);
+        }
     }
 
-    public _destroy(error: Error | null, callback: (error: Error | null) => void): void {
-        this._close();
+    public async _destroy(error: Error | null, callback: (error: Error | null) => void): Promise<void> {
+        await this._close();
+        this.push(null);
         callback(error);
     }
 
-    private _close(): void {
-        /* istanbul ignore if */
+    private async _close(): Promise<void> {
+        /* istanbul ignore if: double unref guard */
         if (this.closed) {
             return;
         }
-
         this.closed = true;
         this.context.unref();
     }

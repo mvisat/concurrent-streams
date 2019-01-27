@@ -1,20 +1,23 @@
 {
   "compilerOptions": {
+    "target": "es2018",
     "module": "commonjs",
     "moduleResolution": "node",
     "types": [
       "node",
-      "jest"
+      "mocha",
+      "chai",
+      "chai-as-promised"
     ],
-    "target": "es2016",
-    "sourceMap": true,
+    "rootDir": "src",
     "outDir": "dist",
     "declaration": true,
-    "strict": true
+    "sourceMap": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noImplicitReturns": true
   },
-  "exclude": [
-    ".vscode",
-    "node_modules",
-    "dist"
+  "include": [
+    "src"
   ]
 }
