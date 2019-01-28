@@ -265,7 +265,22 @@ describe('concurrent stream tests', function() {
                 fd: 10,
             };
             const stream = new Proxied.ConcurrentStream(path, options);
-            expect(await stream.read(buffer, 0)).to.equal(buffer.length);
+            expect(await stream.read(buffer, 0, buffer.length, 0)).to.equal(buffer.length);
+        });
+
+        it('emits "read" event', function(done) {
+            stubFsRead.yields(null, buffer.length, buffer);
+            const position = 5;
+            const options: StreamOptions = {
+                fd: 10,
+            };
+            const stream = new Proxied.ConcurrentStream(path, options);
+            stream.on('read', ([readBuffer, readPosition]) => {
+                expect(readBuffer).to.deep.equal(buffer);
+                expect(readPosition).to.equal(position);
+                done();
+            });
+            stream.read(buffer, 0, buffer.length, position);
         });
 
         it('error occured', async function() {
@@ -275,14 +290,14 @@ describe('concurrent stream tests', function() {
                 fd: 10,
             };
             const stream = new Proxied.ConcurrentStream(path, options);
-            expect(stream.read(buffer, 0)).to.be.rejectedWith(fakeError);
+            expect(stream.read(buffer, 0, buffer.length, 0)).to.be.rejectedWith(fakeError);
         });
 
         it('calls open() if pending', async function() {
             stubFsRead.yields(null, buffer.length, buffer);
             const stream = new Proxied.ConcurrentStream(path);
             const stubOpen = sandbox.stub(stream, 'open').resolves();
-            await stream.read(buffer, 0);
+            await stream.read(buffer, 0, buffer.length, 0);
             expect(stubOpen).to.be.calledOnce;
         });
     });
@@ -296,8 +311,24 @@ describe('concurrent stream tests', function() {
                 fd: 10,
             };
             const stream = new Proxied.ConcurrentStream(path, options);
-            expect(await stream.write(buffer, 0)).to.equal(buffer.length);
+            expect(await stream.write(buffer, 0, buffer.length, 0)).to.equal(buffer.length);
         });
+
+        it('emits "written" event', function(done) {
+            stubFsWrite.yields(null, buffer.length, buffer);
+            const position = 5;
+            const options: StreamOptions = {
+                fd: 10,
+            };
+            const stream = new Proxied.ConcurrentStream(path, options);
+            stream.on('written', ([writtenBuffer, writtenPosition]) => {
+                expect(writtenBuffer).to.deep.equal(buffer);
+                expect(writtenPosition).to.equal(position);
+                done();
+            });
+            stream.write(buffer, 0, buffer.length, position);
+        });
+
 
         it('error occured', async function() {
             const fakeError = new Error('fake error');
@@ -306,14 +337,14 @@ describe('concurrent stream tests', function() {
                 fd: 10,
             };
             const stream = new Proxied.ConcurrentStream(path, options);
-            expect(stream.write(buffer, 0)).to.be.rejectedWith(fakeError);
+            expect(stream.write(buffer, 0, buffer.length, 0)).to.be.rejectedWith(fakeError);
         });
 
         it('calls open() if pending', async function() {
             stubFsWrite.yields(null, buffer.length, buffer);
             const stream = new Proxied.ConcurrentStream(path);
             const stubOpen = sandbox.stub(stream, 'open').resolves();
-            await stream.write(buffer, 0);
+            await stream.write(buffer, 0, buffer.length, 0);
             expect(stubOpen).to.be.calledOnce;
         });
     });

@@ -1,12 +1,38 @@
 import { Readable } from 'stream';
 
 import { ConcurrentStream } from './stream';
-import { applyDefaultOptions } from './util';
 
 export interface ReadStreamOptions {
+    encoding?: string;
     start?: number;
     end?: number;
     highWaterMark?: number;
+}
+
+const defaultOptions: ReadStreamOptions = {
+    start: 0,
+    end: Infinity,
+    highWaterMark: 128 * 1024,
+};
+
+function applyDefaultOptions(options?: ReadStreamOptions): ReadStreamOptions {
+    options = { ...defaultOptions, ...options };
+    if (typeof options.start !== 'number' || isNaN(options.start)) {
+        throw new TypeError('"start" option must be a number');
+    }
+    if (typeof options.end !== 'number' || isNaN(options.end)) {
+        throw new TypeError('"end" option must be a number');
+    }
+    if (options.start < 0 || options.end < 0) {
+        throw new RangeError('"start" and "end" option must be >= 0');
+    }
+    if (!isFinite(options.start)) {
+        throw new TypeError('"start" option must be finite');
+    }
+    if (options.start > options.end) {
+        throw new RangeError('"start" option must be <= "end" option');
+    }
+    return options;
 }
 
 export class ReadStream extends Readable {
@@ -26,15 +52,19 @@ export class ReadStream extends Readable {
         this.end = options.end!;
     }
 
+    public get position(): number {
+        return this.current;
+    }
+
     public async _read(size: number): Promise<void> {
-        size = Math.min(size, this.end - this.current);
+        size = Math.min(size, this.end - this.position + 1);
         if (size <= 0) {
             return this.destroy();
         }
 
         const buffer = Buffer.allocUnsafe(size);
         try {
-            const bytesRead = await this.context.read(buffer, this.current);
+            const bytesRead = await this.context.read(buffer, 0, size, this.position);
             if (!bytesRead) {
                 return this.destroy();
             }
@@ -44,7 +74,6 @@ export class ReadStream extends Readable {
             } else {
                 this.push(buffer);
             }
-            this.emit('read', bytesRead);
         } catch (err) {
             return this.destroy(err);
         }

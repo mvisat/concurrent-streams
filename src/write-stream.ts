@@ -1,29 +1,49 @@
 import { Writable } from 'stream';
 
-import { ConcurrentStream, ErrInvalidOffset } from './stream';
-import { applyDefaultOptions } from './util';
+import { ConcurrentStream } from './stream';
 
 export interface WriteStreamOptions {
+    encoding?: string;
     start?: number;
-    end?: number;
-    highWaterMark?: number;
+}
+
+const defaultOptions: WriteStreamOptions = {
+    encoding: 'utf8',
+    start: 0,
+};
+
+function applyDefaultOptions(options?: WriteStreamOptions): WriteStreamOptions {
+    options = { ...defaultOptions, ...options };
+    if (typeof options.encoding !== 'string' || !Buffer.isEncoding(options.encoding)) {
+        throw new TypeError('"encoding" option must be one of Buffer encoding');
+    }
+    if (typeof options.start !== 'number' || !isFinite(options.start)) {
+        throw new TypeError('"start" option must be a number');
+    }
+    if (options.start < 0) {
+        throw new RangeError('"start" option must be >= 0');
+    }
+    return options;
 }
 
 export class WriteStream extends Writable {
     private context: ConcurrentStream;
     private current: number;
-    private endOffset: number;
     private closed = false;
 
     constructor(context: ConcurrentStream, options?: WriteStreamOptions) {
-        super(options);
+        super();
 
         this.context = context;
         this.context.ref();
 
         options = applyDefaultOptions(options);
+        this.setDefaultEncoding(options.encoding!);
         this.current = options.start!;
-        this.endOffset = options.end!;
+    }
+
+    public get position(): number {
+        return this.current;
     }
 
     public async _write(
@@ -60,15 +80,9 @@ export class WriteStream extends Writable {
         buffer: Buffer | Uint8Array,
         callback: (error?: Error) => void,
     ): Promise<void> {
-        if (this.current + buffer.length > this.endOffset) {
-            await this._close();
-            return callback(ErrInvalidOffset);
-        }
-
         try {
-            const bytesWritten = await this.context.write(buffer, this.current);
+            const bytesWritten = await this.context.write(buffer, 0, buffer.length, this.position);
             this.current += bytesWritten;
-            this.emit('written', bytesWritten);
             callback();
         } catch (err) {
             await this._close();

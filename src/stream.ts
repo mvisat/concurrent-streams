@@ -16,7 +16,6 @@ export interface StreamOptions {
 }
 
 export const ErrInvalidRefCount = new Error('invalid ref count');
-export const ErrInvalidOffset = new Error('invalid offset');
 
 const defaultOptions: StreamOptions = {
     flags: 'r+',
@@ -122,23 +121,43 @@ export class ConcurrentStream extends Emittery {
     }
 
     /** @internal */
-    public async read(buffer: Buffer | Uint8Array, position: number): Promise<number> {
+    public async read(
+        buffer: Buffer | Uint8Array,
+        offset: number,
+        length: number,
+        position: number,
+    ): Promise<number> {
+        let bytesRead = 0;
         try {
             await Promise.all([this.lock.readLock(), this.open()]);
-            return readAsync(this.fd, buffer, 0, buffer.length, position);
+            bytesRead = await readAsync(this.fd, buffer, offset, length, position);
+
+            // emits buffer and position
+            this.emit('read', [buffer.slice(offset, offset + bytesRead), position]);
         } finally {
             this.lock.unlock();
         }
+        return bytesRead;
     }
 
     /** @internal */
-    public async write(buffer: Buffer | Uint8Array, position: number): Promise<number> {
+    public async write(
+        buffer: Buffer | Uint8Array,
+        offset: number,
+        length: number,
+        position: number,
+    ): Promise<number> {
+        let bytesWritten = 0;
         try {
             await Promise.all([this.lock.writeLock(), this.open()]);
-            return writeAsync(this.fd, buffer, 0, buffer.length, position);
+            bytesWritten = await writeAsync(this.fd, buffer, offset, length, position);
+
+            // emits buffer and position
+            this.emit('written', [buffer.slice(offset, offset + bytesWritten), position]);
         } finally {
             this.lock.unlock();
         }
+        return bytesWritten;
     }
 }
 

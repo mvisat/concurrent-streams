@@ -5,7 +5,6 @@ import {
     WriteStream,
     WriteStreamOptions,
     ConcurrentStream,
-    ErrInvalidOffset,
 } from '../../src';
 import { PassThrough } from 'stream';
 
@@ -31,6 +30,13 @@ describe('write stream tests', function() {
     });
 
     describe('new()', function() {
+        it('encoding must be one of Buffer encoding', function() {
+            const options: WriteStreamOptions = {
+                encoding: 'notEncoding',
+            };
+            expect(() => new WriteStream(context, options)).to.throw(TypeError);
+        });
+
         it('start must be a number', function() {
             const options: WriteStreamOptions = {
                 start: NaN,
@@ -48,49 +54,6 @@ describe('write stream tests', function() {
         it('start must be >= 0', function() {
             const options: WriteStreamOptions = {
                 start: -1
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('end must be a number', function() {
-            const options: WriteStreamOptions = {
-                end: NaN,
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('end must be >= 0', function() {
-            const options: WriteStreamOptions = {
-                end: -1
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('highWaterMark must be a number', function() {
-            const options: WriteStreamOptions = {
-                highWaterMark: NaN,
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('highWaterMark must be finite', function() {
-            const options: WriteStreamOptions = {
-                highWaterMark: Infinity
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('highWaterMark must be >= 0', function() {
-            const options: WriteStreamOptions = {
-                highWaterMark: -1
-            };
-            expect(() => new WriteStream(context, options)).to.throw(TypeError);
-        });
-
-        it('start must be <= end', function() {
-            const options: WriteStreamOptions = {
-                start: 101,
-                end: 100,
             };
             expect(() => new WriteStream(context, options)).to.throw(RangeError);
         });
@@ -152,50 +115,6 @@ describe('write stream tests', function() {
     });
 
     describe('_actualWrite()', function() {
-        it('emits "written" event', function(done) {
-            const expected = Buffer.allocUnsafe(123);
-            const stream = new WriteStream(context);
-            const source = new PassThrough({ allowHalfOpen: false });
-
-            stubWrite.callsFake(async (buffer, position) => {
-                return buffer.length;
-            });
-
-            source.pipe(stream);
-            for (let i = 0; i < expected.length; i += 2) {
-                source.write(expected.slice(i, i + 2));
-            }
-            source.end();
-
-            let count = 0;
-            stream.on('written', (written) => {
-                count += written;
-            });
-            stream.on('finish', () => {
-                expect(count).to.equal(expected.length);
-                done();
-            });
-        });
-
-        it('invalid end offset', function(done) {
-            const expected = Buffer.from("Hello");
-            const options: WriteStreamOptions = {
-                start: 0,
-                end: expected.length - 1,
-            };
-            const stream = new WriteStream(context, options);
-            const source = new PassThrough({ allowHalfOpen: false });
-
-            source.pipe(stream);
-            source.write(expected);
-            source.end();
-
-            stream.on('error', (err) => {
-                expect(err).to.equal(ErrInvalidOffset);
-                done();
-            });
-        });
-
         it('error occured', function(done) {
             const expected = Buffer.from("Hello");
             const stream = new WriteStream(context);

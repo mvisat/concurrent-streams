@@ -31,6 +31,13 @@ describe('read stream tests', function() {
     });
 
     describe('new()', function() {
+        it('encoding must be one of Buffer encoding', function() {
+            const options: ReadStreamOptions = {
+                encoding: 'notEncoding',
+            };
+            expect(() => new ReadStream(context, options)).to.throw(TypeError);
+        });
+
         it('start must be a number', function() {
             const options: ReadStreamOptions = {
                 start: NaN,
@@ -49,7 +56,7 @@ describe('read stream tests', function() {
             const options: ReadStreamOptions = {
                 start: -1
             };
-            expect(() => new ReadStream(context, options)).to.throw(TypeError);
+            expect(() => new ReadStream(context, options)).to.throw(RangeError);
         });
 
         it('end must be a number', function() {
@@ -63,7 +70,7 @@ describe('read stream tests', function() {
             const options: ReadStreamOptions = {
                 end: -1
             };
-            expect(() => new ReadStream(context, options)).to.throw(TypeError);
+            expect(() => new ReadStream(context, options)).to.throw(RangeError);
         });
 
         it('highWaterMark must be a number', function() {
@@ -109,7 +116,7 @@ describe('read stream tests', function() {
             const options: ReadStreamOptions = {
                 highWaterMark: 2,
             };
-            stubRead.callsFake(async (buffer: Buffer, position: number): Promise<number> => {
+            stubRead.callsFake(async (buffer: Buffer, offset: number, length: number, position: number): Promise<number> => {
                 if (position >= expected.length) {
                     return 0;
                 }
@@ -122,29 +129,6 @@ describe('read stream tests', function() {
             });
             const sink = new PassThrough({ allowHalfOpen: false }).on('finish', () => {
                 expect(expected).to.deep.equal(Buffer.concat(actual));
-                done();
-            });
-            stream.pipe(sink);
-        });
-
-        it('emits "read" written', function(done) {
-            const expected = Buffer.allocUnsafe(123);
-            const options: ReadStreamOptions = {
-                highWaterMark: 2,
-            };
-            stubRead.callsFake(async (buffer: Buffer, position: number): Promise<number> => {
-                if (position >= expected.length) {
-                    return 0;
-                }
-                return expected.copy(buffer, 0, position, position + options.highWaterMark!);
-            });
-
-            let actual = 0;
-            const stream = new ReadStream(context, options).on('read', (read) => {
-                actual += read;
-            });
-            const sink = new PassThrough({ allowHalfOpen: false }).on('finish', () => {
-                expect(expected.length).to.equal(actual);
                 done();
             });
             stream.pipe(sink);
@@ -157,7 +141,7 @@ describe('read stream tests', function() {
                 end: 5,
                 highWaterMark: 2,
             };
-            stubRead.callsFake(async (buffer: Buffer, position: number): Promise<number> => {
+            stubRead.callsFake(async (buffer: Buffer, offset: number, length: number, position: number): Promise<number> => {
                 if (position >= expected.length) {
                     return 0;
                 }
@@ -170,6 +154,31 @@ describe('read stream tests', function() {
             });
             const sink = new PassThrough({ allowHalfOpen: false }).on('finish', () => {
                 expect(expected).to.deep.equal(Buffer.concat(actual));
+                done();
+            });
+            stream.pipe(sink);
+        });
+
+        it('reads until end (inclusive)', function(done) {
+            const expected = Buffer.from("Hello");
+            const options: ReadStreamOptions = {
+                start: 0,
+                end: 3,
+                highWaterMark: 1,
+            };
+            stubRead.callsFake(async (buffer: Buffer, offset: number, length: number, position: number): Promise<number> => {
+                if (position >= expected.length) {
+                    return 0;
+                }
+                return expected.copy(buffer, 0, position, position + options.highWaterMark!);
+            });
+
+            const actual: Buffer[] = [];
+            const stream = new ReadStream(context, options).on('data', (data) => {
+                actual.push(data);
+            });
+            const sink = new PassThrough({ allowHalfOpen: false }).on('finish', () => {
+                expect(expected.slice(0, options.end! + 1)).to.deep.equal(Buffer.concat(actual));
                 done();
             });
             stream.pipe(sink);
