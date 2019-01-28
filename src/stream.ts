@@ -75,10 +75,12 @@ export class ConcurrentStream extends Emittery {
         return new WriteStream(this, options);
     }
 
+    /** @internal */
     public ref(): void {
         this.refCount++;
     }
 
+    /** @internal */
     public unref(): void {
         this.refCount--;
         if (this.refCount < 0) {
@@ -98,6 +100,7 @@ export class ConcurrentStream extends Emittery {
         });
     }
 
+    /** @internal */
     public async open(): Promise<void> {
         if (this.fd >= 0) {
             return;
@@ -107,6 +110,7 @@ export class ConcurrentStream extends Emittery {
         this.emit('open', this.fd);
     }
 
+    /** @internal */
     public async close(): Promise<void> {
         if (this.fd < 0) {
             return;
@@ -117,6 +121,7 @@ export class ConcurrentStream extends Emittery {
         this.emit('close');
     }
 
+    /** @internal */
     public async read(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
             await Promise.all([this.lock.readLock(), this.open()]);
@@ -126,6 +131,7 @@ export class ConcurrentStream extends Emittery {
         }
     }
 
+    /** @internal */
     public async write(buffer: Buffer | Uint8Array, position: number): Promise<number> {
         try {
             await Promise.all([this.lock.writeLock(), this.open()]);
