@@ -108,6 +108,26 @@ describe('read stream tests', function() {
         });
     });
 
+    describe('position', function() {
+        it('returns current position', function(done) {
+            const expected = Buffer.allocUnsafe(1024);
+            stubRead.callsFake(async (buffer: Buffer, offset: number, length: number, position: number): Promise<number> => {
+                if (position >= expected.length) {
+                    return 0;
+                }
+                return expected.copy(buffer, 0, position, expected.length);
+            });
+
+            const stream = new ReadStream(context);
+            stream.once('data', (data) => {
+                expect(stream.position).to.equal(expected.length);
+                done();
+            });
+            const sink = new PassThrough({ allowHalfOpen: false });
+            stream.pipe(sink);
+        });
+    });
+
     describe('_read()', function() {
         it('reads from source', function(done) {
             // use source with odd size and high water mark with even number

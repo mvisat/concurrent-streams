@@ -57,14 +57,14 @@ export class ReadStream extends Readable {
     }
 
     public async _read(size: number): Promise<void> {
-        size = Math.min(size, this.end - this.position + 1);
+        size = Math.min(size, this.end - this.current + 1);
         if (size <= 0) {
             return this.destroy();
         }
 
         const buffer = Buffer.allocUnsafe(size);
         try {
-            const bytesRead = await this.context.read(buffer, 0, size, this.position);
+            const bytesRead = await this.context.read(buffer, 0, size, this.current);
             if (!bytesRead) {
                 return this.destroy();
             }

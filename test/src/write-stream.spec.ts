@@ -64,6 +64,27 @@ describe('write stream tests', function() {
         });
     });
 
+    describe('position', function() {
+        it('returns current position', function(done) {
+            const expected = Buffer.allocUnsafe(1024);
+            const stream = new WriteStream(context);
+            const source = new PassThrough({ allowHalfOpen: false });
+
+            stubWrite.callsFake(async (buffer, position) => {
+                return buffer.length;
+            });
+
+            source.pipe(stream);
+            source.write(expected);
+            source.end();
+
+            stream.on('finish', () => {
+                expect(stream.position).to.equal(expected.length);
+                done();
+            });
+        });
+    });
+
     describe('_write', function() {
         it('writes to source', function(done) {
             const expected = Buffer.from("Hello");

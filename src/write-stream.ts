@@ -81,7 +81,7 @@ export class WriteStream extends Writable {
         callback: (error?: Error) => void,
     ): Promise<void> {
         try {
-            const bytesWritten = await this.context.write(buffer, 0, buffer.length, this.position);
+            const bytesWritten = await this.context.write(buffer, 0, buffer.length, this.current);
             this.current += bytesWritten;
             callback();
         } catch (err) {
