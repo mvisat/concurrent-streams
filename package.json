@@ -30,7 +30,7 @@
     "node": ">=10.0.0"
   },
   "dependencies": {
-    "async-rwlock": "^1.0.0",
+    "async-rwlock": "^1.1.1",
     "emittery": "^0.4.1"
   },
   "devDependencies": {

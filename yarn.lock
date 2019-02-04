@@ -214,10 +214,10 @@ assertion-error@^1.1.0:
   resolved "https://registry.yarnpkg.com/assertion-error/-/assertion-error-1.1.0.tgz#e60b6b0e8f301bd97e5375215bda406c85118c0b"
   integrity sha512-jgsaNduz+ndvGyFt3uSuWqvy4lCnIJiovtouQN5JZHOKCS2QuhEdbcQHFhVksz2N2U9hXJo8odG7ETyWlEeuDw==
 
-async-rwlock@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/async-rwlock/-/async-rwlock-1.0.0.tgz#ca83954b1f9e6032ba297d349f8c10c4e84e3ab3"
-  integrity sha512-SEMbHBPGDIgFWJqDPqX8BGipIdNVERrpjFiiQgU14M9Qb2hVCJJJ/zgM4ysZyFyy2rabzk/9PiVbN1Hw5oRq3A==
+async-rwlock@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/async-rwlock/-/async-rwlock-1.1.1.tgz#6662c732aa2950969b5bdc085ef568fa7adfb97a"
+  integrity sha512-K4ecpHLAc0Jul4dMb1KLpukblQmHxD5/HNgkTuO3sQ9oLLtVENCJVk7+b0wMj1K89cqnjGkTsAvOb83lCfoKwA==
 
 async@^2.5.0:
   version "2.6.1"
