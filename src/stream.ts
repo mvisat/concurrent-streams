@@ -131,9 +131,6 @@ export class ConcurrentStream extends Emittery {
         try {
             await Promise.all([this.lock.readLock(), this.open()]);
             bytesRead = await readAsync(this.fd, buffer, offset, length, position);
-
-            // emits buffer and position
-            this.emit('read', [buffer.slice(offset, offset + bytesRead), position]);
         } finally {
             this.lock.unlock();
         }
@@ -151,9 +148,6 @@ export class ConcurrentStream extends Emittery {
         try {
             await Promise.all([this.lock.writeLock(), this.open()]);
             bytesWritten = await writeAsync(this.fd, buffer, offset, length, position);
-
-            // emits buffer and position
-            this.emit('written', [buffer.slice(offset, offset + bytesWritten), position]);
         } finally {
             this.lock.unlock();
         }

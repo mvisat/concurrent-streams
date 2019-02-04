@@ -214,6 +214,17 @@ describe('read stream tests', function() {
             const spyDestroy = sandbox.spy(stream, 'destroy');
             stream.pipe(new PassThrough({ allowHalfOpen: false }));
         });
+
+        it('emits "read" event with bytes read', function(done) {
+            const num = 1337;
+            stubRead.onFirstCall().resolves(num);
+            stubRead.resolves(0);
+            const stream = new ReadStream(context).on('read', (bytesRead) => {
+                expect(bytesRead).to.equal(num);
+                done();
+            });
+            stream.pipe(new PassThrough({ allowHalfOpen: false }));
+        });
     });
 
     describe('_destroy()', function() {

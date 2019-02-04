@@ -136,6 +136,23 @@ describe('write stream tests', function() {
     });
 
     describe('_actualWrite()', function() {
+        it('emits "written" event with bytes written', function(done) {
+            const expected = Buffer.from("Hello");
+            const stream = new WriteStream(context);
+            const source = new PassThrough({ allowHalfOpen: false });
+
+            stubWrite.resolves(expected.length);
+
+            source.pipe(stream);
+            source.write(expected);
+            source.end();
+
+            stream.on('written', (bytesWritten) => {
+                expect(bytesWritten).to.equal(expected.length);
+                done();
+            });
+        });
+
         it('error occured', function(done) {
             const expected = Buffer.from("Hello");
             const stream = new WriteStream(context);
