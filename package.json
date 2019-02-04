@@ -66,7 +66,8 @@
       "src/**/*.ts"
     ],
     "exclude": [
-      "**/*.d.ts"
+      "**/*.d.ts",
+      "src/**/index.ts"
     ],
     "reporter": [
       "html",
