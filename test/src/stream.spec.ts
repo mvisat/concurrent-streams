@@ -56,13 +56,6 @@ describe('concurrent stream tests', function() {
             expect(() => new ConcurrentStream(path, options)).to.throw(TypeError);
         });
 
-        it('encoding must be a string', function() {
-            const options: StreamOptions = {
-                encoding: undefined
-            };
-            expect(() => new ConcurrentStream(path, options)).to.throw(TypeError);
-        });
-
         it('fd must be a number', function() {
             const options: StreamOptions = {
                 fd: NaN

@@ -9,7 +9,6 @@ import { WriteStream, WriteStreamOptions } from './write-stream';
 
 export interface StreamOptions {
     flags?: string;
-    encoding?: string;
     fd?: number;
     mode?: number;
     autoClose?: boolean;
@@ -19,7 +18,6 @@ export const ErrInvalidRefCount = new Error('invalid ref count');
 
 const defaultOptions: StreamOptions = {
     flags: 'r+',
-    encoding: 'utf8',
     fd: -1,
     mode: 0o666,
     autoClose: true,
@@ -29,9 +27,6 @@ function applyDefaultOptions(options?: StreamOptions): StreamOptions {
     options = { ...defaultOptions, ...options };
     if (typeof options.flags !== 'string') {
         throw new TypeError('"flags" option must be a string');
-    }
-    if (typeof options.encoding !== 'string') {
-        throw new TypeError('"encoding" option must be a string');
     }
     if (typeof options.fd !== 'number' || !isFinite(options.fd)) {
         throw new TypeError('"fd" option must be a finite number');
