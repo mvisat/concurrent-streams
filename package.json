@@ -1,6 +1,6 @@
 {
   "name": "concurrent-streams",
-  "version": "0.0.1",
+  "version": "0.0.1-dev",
   "description": "Safe concurrent streams for reading and writing file",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -9,7 +9,7 @@
     "build": "tsc",
     "lint": "tslint --project tsconfig.json",
     "pretty": "yarn lint && prettier --write 'src/**/*.ts'",
-    "prepublishOnly": "yarn lint && yarn test",
+    "prepublishOnly": "yarn lint && yarn test && yarn build",
     "test": "nyc mocha"
   },
   "repository": {
